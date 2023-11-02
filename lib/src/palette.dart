@@ -928,10 +928,11 @@ class _ColorPickerLabelState extends State<ColorPickerLabel> {
                         alignment: Alignment.center,
                         width: 60,
                         height: 40,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE5E8E8)),
-                        ),
+                        /// Override root layer
+                        // decoration: BoxDecoration(
+                        //   borderRadius: BorderRadius.circular(8),
+                        //   border: Border.all(color: const Color(0xFFE5E8E8)),
+                        // ),
                         child: TextField(
                           inputFormatters: [
                             UpperCaseTextFormatter(),
@@ -1076,10 +1077,11 @@ class _ColorPickerInputState extends State<ColorPickerInput> {
                 alignment: Alignment.center,
                 width: 90,
                 height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE5E8E8)),
-                ),
+                /// Override root layer
+                // decoration: BoxDecoration(
+                //   borderRadius: BorderRadius.circular(8),
+                //   border: Border.all(color: const Color(0xFFE5E8E8)),
+                // ),
                 child: SizedBox(
                   width: (Theme.of(context).textTheme.bodyText2?.fontSize ?? 14) * 10,
                   child: TextField(
