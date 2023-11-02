@@ -80,6 +80,8 @@ HSVColor hslToHsv(HSLColor color) {
 /// Reference: https://en.wikipedia.org/wiki/Web_colors#Hex_triplet
 const String kValidHexPattern = r'^#?[0-9a-fA-F]{1,8}';
 
+const String kValidRgbPattern = r'^#?[0-9]{1,3}';
+
 /// [RegExp] pattern for validation complete HEX color [String], allows only:
 ///
 /// * exactly 6 or 8 digits in HEX format,

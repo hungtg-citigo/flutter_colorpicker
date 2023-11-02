@@ -815,13 +815,24 @@ class ColorPickerLabel extends StatefulWidget {
     this.enableAlpha = true,
     this.colorLabelTypes = const [ColorLabelType.rgb, ColorLabelType.hsv, ColorLabelType.hsl],
     this.textStyle,
+    this.titleStyle,
+    this.color,
+    this.onColorChanged,
+    this.embeddedText,
+    this.disable,
   })  : assert(colorLabelTypes.length > 0),
         super(key: key);
 
   final HSVColor hsvColor;
   final bool enableAlpha;
   final TextStyle? textStyle;
+  final TextStyle? titleStyle;
   final List<ColorLabelType> colorLabelTypes;
+
+  final Color? color;
+  final ValueChanged<Color>? onColorChanged;
+  final bool? embeddedText;
+  final bool? disable;
 
   @override
   _ColorPickerLabelState createState() => _ColorPickerLabelState();
@@ -884,11 +895,24 @@ class _ColorPickerLabelState extends State<ColorPickerLabel> {
     double fontSize = 14;
     if (widget.textStyle != null && widget.textStyle?.fontSize != null) fontSize = widget.textStyle?.fontSize ?? 14;
 
-    return [
-      for (String item in _colorTypes[_colorType] ?? [])
-        if (widget.enableAlpha || item != 'A')
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    return _colorTypes[_colorType]
+        ?.where((item) => widget.enableAlpha || item != 'A')
+        .map((item) {
+          EdgeInsetsGeometry? margin;
+          if (item != _colorTypes[_colorType]?.last) {
+            margin = const EdgeInsets.only(left: 4.0);
+          }
+
+          final rgbValue = colorValue(widget.hsvColor, _colorType)[_colorTypes[_colorType]!.indexOf(item)];
+
+          final textController = TextEditingController();
+          textController.text = rgbValue;
+          textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: textController.text.length),
+          );
+
+          return Container(
+            margin: margin,
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: fontSize * 2),
               child: IntrinsicHeight(
@@ -896,41 +920,99 @@ class _ColorPickerLabelState extends State<ColorPickerLabel> {
                   children: <Widget>[
                     Text(
                       item,
-                      style: widget.textStyle ?? Theme.of(context).textTheme.bodyText1,
+                      style: widget.titleStyle ?? Theme.of(context).textTheme.bodyText1,
                     ),
                     const SizedBox(height: 10.0),
                     Expanded(
-                      child: Text(
-                        colorValue(widget.hsvColor, _colorType)[_colorTypes[_colorType]!.indexOf(item)],
-                        overflow: TextOverflow.ellipsis,
-                        style: widget.textStyle ?? Theme.of(context).textTheme.bodyText2,
+                      child: Container(
+                        alignment: Alignment.center,
+                        width: 60,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE5E8E8)),
+                        ),
+                        child: TextField(
+                          inputFormatters: [
+                            UpperCaseTextFormatter(),
+                            FilteringTextInputFormatter.allow(RegExp(kValidRgbPattern)),
+                          ],
+                          keyboardType: TextInputType.number,
+                          style: widget.textStyle ?? Theme.of(context).textTheme.bodyText1,
+                          textAlign: TextAlign.center,
+                          controller: textController,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 9),
+                          ),
+                          onChanged: (String value) {
+                            /// oldValue
+                            String r = colorValue(widget.hsvColor, _colorType)[_colorTypes[_colorType]!.indexOf('R')];
+                            String g = colorValue(widget.hsvColor, _colorType)[_colorTypes[_colorType]!.indexOf('G')];
+                            String b = colorValue(widget.hsvColor, _colorType)[_colorTypes[_colorType]!.indexOf('B')];
+
+                            switch(item) {
+                              case 'R':
+                                r = value.isEmpty ? '0' : value;
+                                break;
+                              case 'G':
+                                g = value.isEmpty ? '0' : value;
+                                break;
+                              case 'B':
+                                b = value.isEmpty ? '0' : value;
+                                break;
+                            }
+
+                            if(value.isEmpty) {
+                              textController.text = '0';
+                              textController.selection = TextSelection.fromPosition(
+                                TextPosition(offset: textController.text.length),
+                              );
+                            }
+
+                            final Color? color = Color.fromRGBO(int.parse(r), int.parse(g), int.parse(b), 1);
+                            if (color != null) {
+                              widget.onColorChanged?.call(color);
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          )
-    ];
+          );
+    }).toList() ?? [];
   }
 
   @override
   Widget build(BuildContext context) {
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-      DropdownButton(
-        value: _colorType,
-        onChanged: (ColorLabelType? type) {
-          if (type != null) setState(() => _colorType = type);
-        },
-        items: [
-          for (ColorLabelType type in widget.colorLabelTypes)
-            DropdownMenuItem(
-              value: type,
-              child: Text(type.toString().split('.').last.toUpperCase()),
-            )
-        ],
-      ),
-      const SizedBox(width: 10.0),
+      // TODO(HungTG): Switch color palette
+      // DropdownButton(
+      //   value: _colorType,
+      //   onChanged: (ColorLabelType? type) {
+      //     if (type != null) setState(() => _colorType = type);
+      //   },
+      //   items: [
+      //     for (ColorLabelType type in widget.colorLabelTypes)
+      //       DropdownMenuItem(
+      //         value: type,
+      //         child: Text(type.toString().split('.').last.toUpperCase()),
+      //       )
+      //   ],
+      // ),
+      if (widget.color != null && widget.onColorChanged != null)
+        ColorPickerInput(
+          widget.color!,
+          widget.onColorChanged!,
+          enableAlpha: widget.enableAlpha,
+          embeddedText: widget.embeddedText ?? false,
+          disable: widget.disable ?? false,
+        ),
+      const SizedBox(width: 6.0),
       ...colorValueLabels(),
     ]);
   }
@@ -945,6 +1027,8 @@ class ColorPickerInput extends StatefulWidget {
     this.enableAlpha = true,
     this.embeddedText = false,
     this.disable = false,
+    this.titleStyle,
+    this.contentStyle,
   }) : super(key: key);
 
   final Color color;
@@ -952,6 +1036,9 @@ class ColorPickerInput extends StatefulWidget {
   final bool enableAlpha;
   final bool embeddedText;
   final bool disable;
+
+  final TextStyle? titleStyle;
+  final TextStyle? contentStyle;
 
   @override
   _ColorPickerInputState createState() => _ColorPickerInputState();
@@ -969,6 +1056,7 @@ class _ColorPickerInputState extends State<ColorPickerInput> {
 
   @override
   Widget build(BuildContext context) {
+    double fontSize = 14;
     if (inputColor != widget.color.value) {
       textEditingController.text = '#' +
           widget.color.red.toRadixString(16).toUpperCase().padLeft(2, '0') +
@@ -976,39 +1064,58 @@ class _ColorPickerInputState extends State<ColorPickerInput> {
           widget.color.blue.toRadixString(16).toUpperCase().padLeft(2, '0') +
           (widget.enableAlpha ? widget.color.alpha.toRadixString(16).toUpperCase().padLeft(2, '0') : '');
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 5.0),
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        if (!widget.embeddedText) Text('Hex', style: Theme.of(context).textTheme.bodyText1),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: (Theme.of(context).textTheme.bodyText2?.fontSize ?? 14) * 10,
-          child: TextField(
-            enabled: !widget.disable,
-            controller: textEditingController,
-            inputFormatters: [
-              UpperCaseTextFormatter(),
-              FilteringTextInputFormatter.allow(RegExp(kValidHexPattern)),
-            ],
-            decoration: InputDecoration(
-              isDense: true,
-              label: widget.embeddedText ? const Text('Hex') : null,
-              contentPadding: const EdgeInsets.symmetric(vertical: 5),
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: fontSize * 2),
+      child: IntrinsicHeight(
+        child: Column(
+          children: <Widget>[
+            Text('Hex', style: widget.titleStyle ?? Theme.of(context).textTheme.bodyText1),
+            const SizedBox(height: 10.0),
+            Expanded(
+              child: Container(
+                alignment: Alignment.center,
+                width: 90,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE5E8E8)),
+                ),
+                child: SizedBox(
+                  width: (Theme.of(context).textTheme.bodyText2?.fontSize ?? 14) * 10,
+                  child: TextField(
+                  style: widget.contentStyle,
+                  textAlign: TextAlign.center,
+                  enabled: !widget.disable,
+                  controller: textEditingController,
+                  inputFormatters: [
+                    UpperCaseTextFormatter(),
+                    FilteringTextInputFormatter.allow(RegExp(kValidHexPattern)),
+                  ],
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    label: widget.embeddedText ? const Text('Hex') : null,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 9),
+                  ),
+                  onChanged: (String value) {
+                    String input = value;
+                    if (value.length == 9) {
+                      input = value.split('').getRange(7, 9).join() +
+                          value.split('').getRange(1, 7).join();
+                    }
+                    final Color? color = colorFromHex(input);
+                    if (color != null) {
+                      widget.onColorChanged(color);
+                      inputColor = color.value;
+                    }
+                  },
+                ),
+                ),
+              ),
             ),
-            onChanged: (String value) {
-              String input = value;
-              if (value.length == 9) {
-                input = value.split('').getRange(7, 9).join() + value.split('').getRange(1, 7).join();
-              }
-              final Color? color = colorFromHex(input);
-              if (color != null) {
-                widget.onColorChanged(color);
-                inputColor = color.value;
-              }
-            },
-          ),
+          ],
         ),
-      ]),
+      ),
     );
   }
 }

@@ -30,6 +30,9 @@ class ColorPicker extends StatefulWidget {
     this.hexInputController,
     this.colorHistory,
     this.onHistoryChanged,
+    this.paddingFrameColor,
+    this.borderRadiusFrameColor,
+    this.enableReplaceColorPickerLabelWithHexInput = false,
   }) : super(key: key);
 
   final Color pickerColor;
@@ -47,6 +50,10 @@ class ColorPicker extends StatefulWidget {
   final double pickerAreaHeightPercent;
   final BorderRadius pickerAreaBorderRadius;
   final bool hexInputBar;
+
+  final EdgeInsetsGeometry? paddingFrameColor;
+  final BorderRadiusGeometry? borderRadiusFrameColor;
+  final bool enableReplaceColorPickerLabelWithHexInput;
 
   /// Allows setting the color using text input, via [TextEditingController].
   ///
@@ -239,7 +246,7 @@ class _ColorPickerState extends State<ColorPicker> {
 
   Widget colorPicker() {
     return ClipRRect(
-      borderRadius: widget.pickerAreaBorderRadius,
+      borderRadius: widget.borderRadiusFrameColor,
       child: Padding(
         padding: EdgeInsets.all(widget.paletteType == PaletteType.hueWheel ? 10 : 0),
         child: ColorPickerArea(currentHsvColor, onColorChanging, widget.paletteType),
@@ -279,7 +286,8 @@ class _ColorPickerState extends State<ColorPicker> {
     if (MediaQuery.of(context).orientation == Orientation.portrait || widget.portraitOnly) {
       return Column(
         children: <Widget>[
-          SizedBox(
+          Container(
+            padding: widget.paddingFrameColor,
             width: widget.colorPickerWidth,
             height: widget.colorPickerWidth * widget.pickerAreaHeightPercent,
             child: colorPicker(),
@@ -289,23 +297,24 @@ class _ColorPickerState extends State<ColorPicker> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                GestureDetector(
-                  onTap: () => setState(() {
-                    if (widget.onHistoryChanged != null && !colorHistory.contains(currentHsvColor.toColor())) {
-                      colorHistory.add(currentHsvColor.toColor());
-                      widget.onHistoryChanged!(colorHistory);
-                    }
-                  }),
-                  child: ColorIndicator(currentHsvColor),
-                ),
+                /// Disable histories color picked
+                // GestureDetector(
+                //   onTap: () => setState(() {
+                //     if (widget.onHistoryChanged != null && !colorHistory.contains(currentHsvColor.toColor())) {
+                //       colorHistory.add(currentHsvColor.toColor());
+                //       widget.onHistoryChanged!(colorHistory);
+                //     }
+                //   }),
+                //   child: ColorIndicator(currentHsvColor),
+                // ),
                 Expanded(
                   child: Column(
                     children: <Widget>[
-                      SizedBox(height: 40.0, width: widget.colorPickerWidth - 75.0, child: sliderByPaletteType()),
+                      SizedBox(height: 40.0, width: widget.colorPickerWidth, child: sliderByPaletteType()),
                       if (widget.enableAlpha)
                         SizedBox(
                           height: 40.0,
-                          width: widget.colorPickerWidth - 75.0,
+                          width: widget.colorPickerWidth,
                           child: colorPickerSlider(TrackType.alpha),
                         ),
                     ],
@@ -314,25 +323,26 @@ class _ColorPickerState extends State<ColorPicker> {
               ],
             ),
           ),
-          if (colorHistory.isNotEmpty)
-            SizedBox(
-              width: widget.colorPickerWidth,
-              height: 50,
-              child: ListView(scrollDirection: Axis.horizontal, children: <Widget>[
-                for (Color color in colorHistory)
-                  Padding(
-                    key: Key(color.hashCode.toString()),
-                    padding: const EdgeInsets.fromLTRB(15, 0, 0, 10),
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () => onColorChanging(HSVColor.fromColor(color)),
-                        child: ColorIndicator(HSVColor.fromColor(color), width: 30, height: 30),
-                      ),
-                    ),
-                  ),
-                const SizedBox(width: 15),
-              ]),
-            ),
+          /// Disable histories color picked
+          // if (colorHistory.isNotEmpty)
+          //   SizedBox(
+          //     width: widget.colorPickerWidth,
+          //     height: 50,
+          //     child: ListView(scrollDirection: Axis.horizontal, children: <Widget>[
+          //       for (Color color in colorHistory)
+          //         Padding(
+          //           key: Key(color.hashCode.toString()),
+          //           padding: const EdgeInsets.fromLTRB(15, 0, 0, 10),
+          //           child: Center(
+          //             child: GestureDetector(
+          //               onTap: () => onColorChanging(HSVColor.fromColor(color)),
+          //               child: ColorIndicator(HSVColor.fromColor(color), width: 30, height: 30),
+          //             ),
+          //           ),
+          //         ),
+          //       const SizedBox(width: 15),
+          //     ]),
+          //   ),
           if (widget.showLabel && widget.labelTypes.isNotEmpty)
             FittedBox(
               child: ColorPickerLabel(
@@ -340,6 +350,13 @@ class _ColorPickerState extends State<ColorPicker> {
                 enableAlpha: widget.enableAlpha,
                 textStyle: widget.labelTextStyle,
                 colorLabelTypes: widget.labelTypes,
+                color: currentHsvColor.toColor(),
+                onColorChanged: (Color color) {
+                  setState(() => currentHsvColor = HSVColor.fromColor(color));
+                  widget.onColorChanged(currentHsvColor.toColor());
+                  if (widget.onHsvColorChanged != null) widget.onHsvColorChanged!(currentHsvColor);
+                },
+                embeddedText: false, disable: false,
               ),
             ),
           if (widget.hexInputBar)

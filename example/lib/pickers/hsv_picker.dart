@@ -94,6 +94,8 @@ class _HSVColorPickerExampleState extends State<HSVColorPickerExample> {
                           hexInputBar: _displayHexInputBar,
                           colorHistory: widget.colorHistory,
                           onHistoryChanged: widget.onHistoryChanged,
+                          paddingFrameColor: const EdgeInsets.all(12),
+                          borderRadiusFrameColor: BorderRadius.circular(12),
                         ),
                       ),
                     );
