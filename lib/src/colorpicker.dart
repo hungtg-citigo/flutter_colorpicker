@@ -31,6 +31,7 @@ class ColorPicker extends StatefulWidget {
     this.colorHistory,
     this.onHistoryChanged,
     this.paddingFrameColor,
+    this.marginFrameColor,
     this.borderRadiusFrameColor,
     this.enableReplaceColorPickerLabelWithHexInput = false,
   }) : super(key: key);
@@ -51,6 +52,7 @@ class ColorPicker extends StatefulWidget {
   final BorderRadius pickerAreaBorderRadius;
   final bool hexInputBar;
 
+  final EdgeInsetsGeometry? marginFrameColor;
   final EdgeInsetsGeometry? paddingFrameColor;
   final BorderRadiusGeometry? borderRadiusFrameColor;
   final bool enableReplaceColorPickerLabelWithHexInput;
@@ -287,6 +289,7 @@ class _ColorPickerState extends State<ColorPicker> {
       return Column(
         children: <Widget>[
           Container(
+            margin: widget.marginFrameColor,
             padding: widget.paddingFrameColor,
             width: widget.colorPickerWidth,
             height: widget.colorPickerWidth * widget.pickerAreaHeightPercent,
